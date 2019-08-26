@@ -3,41 +3,17 @@ const router = express.Router();
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
 const User = require("./../schemas/userSchema");
-/* GET users listing. */
-router.post("/login", function(req, res, next) {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.json({
-      msg: `You don't inserted information about ${!email ? "email" : ""} 
-       ${!password ? "password" : ""}`,
-      success: false
-    });
-  }
-  User.findOne({ email }).then(user => {
-    if (!user) {
-      return res.json({ msg: "This user does not exists", success: false });
-    }
-    bcrypt
-      .compare(password, user.password)
-      .then(result => {
-        console.log(user);
-        if (result) return res.json({ user: user.name, success: true });
-        return res.json({ msg: "incorrect password", success: false });
-      })
-      .catch(err => {
-        if (err) throw err;
-      });
-  });
-});
+const jwt = require("jsonwebtoken");
 
-router.post("/register", function(req, res, next) {
+router.post("/register", (req, res) => {
   const { name, email, password } = req.body;
+  console.log(req.body);
   const bucket = [];
   const userType = "user";
   let valid = true;
   let errors = { name: "", email: "", password: "", success: false };
   if (!name || !email || !password) {
-    return res.json({
+    return res.status(400).json({
       msg: `You don't inserted information about ${!name ? "name" : ""} ${
         !email ? "email" : ""
       } ${!password ? "password" : ""}`
@@ -46,7 +22,6 @@ router.post("/register", function(req, res, next) {
   if (password.length < 8) {
     errors.password +=
       "password is too short it should be minimum 8 letters long";
-
     valid = false;
   }
 
@@ -63,18 +38,24 @@ router.post("/register", function(req, res, next) {
     valid = false;
   }
 
-  if (!valid) return res.json(errors);
+  if (!valid) return res.status(400).json(errors);
 
   User.findOne({ email }).then(user => {
     if (user) {
-      return res.json({ msg: "This user already exists", success: false });
+      return res
+        .status(400)
+        .json({ msg: "This user already exists", success: false });
     }
     bcrypt.hash(password, saltRounds, function(err, hash) {
       if (err) throw err;
       let password = hash;
       const newUser = new User({ name, email, password, bucket, userType });
       console.log(newUser);
-      newUser.save().then(item => res.json({ success: true }));
+      try {
+        newUser.save().then(item => res.json({ success: true }));
+      } catch (err) {
+        res.status(400).send(err);
+      }
     });
   });
 });

@@ -11,7 +11,7 @@ router.get("/", function(req, res) {
 router.post("/", function(req, res, next) {
   const { name, description, quantity } = req.body;
   if (!name || !description || !quantity) {
-    return res.json({
+    return res.status(400).json({
       msg: `You don't inserted information about ${!name ? "name" : ""} ${
         !description ? "description" : ""
       } ${!quantity ? "quantity" : ""}`
@@ -19,7 +19,7 @@ router.post("/", function(req, res, next) {
   }
   ShopItem.findOne({ name }).then(shopItem => {
     if (shopItem) {
-      return res.json({ msg: "This shop item already exists" });
+      return res.status(400).json({ msg: "This shop item already exists" });
     }
     const newShopItem = new ShopItem({ name, description, quantity });
     console.log(newShopItem);
@@ -39,7 +39,7 @@ router.patch("/", function(req, res) {
       return item.updateOne({ name, description, quantity });
     })
     .then(() => res.json({ success: true }))
-    .catch(err => res.json({ msg: err }));
+    .catch(err => res.status(400).json({ msg: err }));
 });
 
 //REMOVE ITEM
@@ -48,7 +48,7 @@ router.delete("/:id", function(req, res) {
   ShopItem.findById(id)
     .then(item => item.remove())
     .then(() => res.json({ success: true }))
-    .catch(err => res.json({ msg: err }));
+    .catch(err => res.status(400).json({ msg: err }));
 });
 
 module.exports = router;
